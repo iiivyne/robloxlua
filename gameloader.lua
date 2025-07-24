@@ -2,7 +2,8 @@ local placeScripts = {
     [126509999114328] = function()
         -- script content
         print("game: 99 nights in the forest")
-        -- require or execute your place-specific code here
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/iiivyne/robloxlua/refs/heads/main/99nights.lua"))()
+
     end,
     [987654321] = function()
         -- script content
