@@ -1,13 +1,11 @@
 local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/iiivyne/robloxlua/refs/heads/main/lib.lua"))()
-local int = lib:CreateInterface("universal","script made by lohjc","https://discord.gg/ZNTHTWx7KE","bottom left","default")
+local int = lib:CreateInterface("universal","modify your client","https://discord.gg/ZNTHTWx7KE","bottom left","default")
 local plr = int:CreateTab("Player","modify your localplayer","player")
 local vis = int:CreateTab("Visuals","modify autoyour visuals","visuals")
 local misc = int:CreateTab("Misc","miscellaneous","misc")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-
-local storyDropdown = main:CreateDropdown("item esp", function() end)
 
 -- === Player Sliders ===
 
@@ -44,7 +42,7 @@ plr:CreateSlider("walkspeed", 500, 16, function(value)
     end)
 end)
 
-plr:CreateCheckBox("walkspeed toggle (50)",function(toggle)
+plr:CreateCheckbox("walkspeed toggle (50)",function(toggle)
     if toggle == true then 
     _G.HackedWalkSpeed = 50
         else
@@ -202,7 +200,7 @@ local function handlePlayerESP(plr)
 end
 
 --// GUI TOGGLES (INTEGRATE INTO YOUR UI)
-vis:CreateCheckBox("ESP", function(state)
+vis:CreateCheckbox("ESP", function(state)
 	ESPEnabled = state
 	if not state then
 		cleanupBillboardESP()
@@ -215,7 +213,7 @@ vis:CreateCheckBox("ESP", function(state)
 	end
 end)
 
-vis:CreateCheckBox("Chams", function(state)
+vis:CreateCheckbox("Chams", function(state)
 	ChamsEnabled = state
 	if not state then
 		cleanupChamsESP()
@@ -257,14 +255,15 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-vis:CreateCheckBox("FOV Circle", function(state)
+vis:CreateCheckbox("FOV Circle", function(state)
 	FOVCircle.Visible = state
 end)
 
 
 -- extra scripts
 
-local civDropdown2 = misc:CreateDropdown("Extra Scripts", function() end)
+
+local civDropdown2 = misc:CreateDropdown("extra scripts")
 
 civDropdown2:AddButton("infinite yield",function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
@@ -276,4 +275,3 @@ end)
 
 
 -- extra scripts
-
