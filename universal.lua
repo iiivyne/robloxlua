@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
-local storyDropdown = main:CreateDropDown("item esp", function() end)
+local storyDropdown = main:CreateDropdown("item esp", function() end)
 
 -- === Player Sliders ===
 
@@ -264,7 +264,7 @@ end)
 
 -- extra scripts
 
-local civDropdown2 = misc:CreateDropDown("Extra Scripts", function() end)
+local civDropdown2 = misc:CreateDropdown("Extra Scripts", function() end)
 
 civDropdown2:AddButton("infinite yield",function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
