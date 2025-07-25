@@ -21,7 +21,7 @@ local player = Players.LocalPlayer
 -- Safe zone setup
 local baseplate = Instance.new("Part")
 baseplate.Name = "SafeZoneBaseplate"
-baseplate.Size = Vector3.new(20, 1, 20)
+baseplate.Size = Vector3.new(9999, 1, 9999)
 baseplate.Position = Vector3.new(0, 100, 0)
 baseplate.Anchored = true
 baseplate.CanCollide = true
@@ -1037,8 +1037,53 @@ local autoEatEnabled = false
 local autoBreakEnabled = false
 local autoBiofuelEnabledItems = {}
 
--- UI
-local fuelDropdown = autofarmss:CreateDropDown("Auto Campfire (Fuel)")
+-- Move item to a specific position
+local function moveItemToPos(item, position)
+    local part = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart") or item:FindFirstChild("Handle")
+    if not part then return end
+    item.PrimaryPart = part
+    pcall(function()
+        remoteEvents.RequestStartDraggingItem:FireServer(item)
+        task.wait(0.1)
+        item:SetPrimaryPartCFrame(CFrame.new(position))
+        task.wait(0.1)
+        remoteEvents.StopDraggingItem:FireServer(item)
+    end)
+end
+
+local alwaysFeedDropdown = autofarmss:CreateDropDown("Auto Feed Campfire (ignores HP)")
+
+local alwaysFeedEnabledItems = {}
+
+for _, itemName in ipairs(campfireFuelItems) do
+    alwaysFeedDropdown:AddCheckbox(itemName, function(checked)
+        alwaysFeedEnabledItems[itemName] = checked
+    end)
+end
+
+alwaysFeedDropdown:AddCheckbox("Bulk (All)", function(checked)
+    for _, itemName in ipairs(campfireFuelItems) do
+        alwaysFeedEnabledItems[itemName] = checked
+    end
+end)
+
+-- Coroutine for always feeding campfire
+coroutine.wrap(function()
+    while true do
+        for itemName, enabled in pairs(alwaysFeedEnabledItems) do
+            if enabled then
+                for _, item in ipairs(itemsFolder:GetChildren()) do
+                    if item.Name == itemName then
+                        moveItemToPos(item, campfireDropPos)
+                    end
+                end
+            end
+        end
+        task.wait(2)
+    end
+end)()
+
+local fuelDropdown = autofarmss:CreateDropDown("Auto Feed Campfire (HP Based)")
 for _, itemName in ipairs(campfireFuelItems) do
     fuelDropdown:AddCheckbox(itemName, function(checked)
         autoFuelEnabledItems[itemName] = checked
@@ -1072,21 +1117,33 @@ for _, itemName in ipairs(biofuelItems) do
     end)
 end
 
--- === SHARED TELEPORT FUNCTION ===
-local function moveItemToPos(item, position)
-    local part = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart") or item:FindFirstChild("Handle")
-    if not part then return end
-    if (part.Position - position).Magnitude > 0.5 then
-        local success, err = pcall(function()
-            remoteEvents.RequestStartDraggingItem:FireServer(item)
-            part.CFrame = CFrame.new(position)
-            remoteEvents.StopDraggingItem:FireServer(item)
-        end)
-        if not success then
-            warn("Failed to move", item.Name, err)
-        end
+-- Add this to Auto Campfire (Fuel) dropdown
+fuelDropdown:AddCheckbox("Bulk (All)", function(checked)
+    for _, itemName in ipairs(campfireFuelItems) do
+        autoFuelEnabledItems[itemName] = checked
     end
-end
+end)
+
+-- Add this to Auto Cook Food dropdown
+cookDropdown:AddCheckbox("Bulk (All)", function(checked)
+    for _, itemName in ipairs(autocookItems) do
+        autoCookEnabledItems[itemName] = checked
+    end
+end)
+
+-- Add this to Auto Machine Grind dropdown
+grindDropdown:AddCheckbox("Bulk (All)", function(checked)
+    for _, itemName in ipairs(autoGrindItems) do
+        autoGrindEnabledItems[itemName] = checked
+    end
+end)
+
+-- Add this to Auto Biofuel Processor dropdown
+biofuelDropdown:AddCheckbox("Bulk (All)", function(checked)
+    for _, itemName in ipairs(biofuelItems) do
+        autoBiofuelEnabledItems[itemName] = checked
+    end
+end)
 
 -- === AUTO EAT ===
 coroutine.wrap(function()
@@ -1119,15 +1176,19 @@ coroutine.wrap(function()
     while true do
         local healthPercent = fillFrame and fillFrame.Size.X.Scale or 1
         if healthPercent < 0.7 then
-            for itemName, enabled in pairs(autoFuelEnabledItems) do
-                if enabled then
-                    for _, item in ipairs(itemsFolder:GetChildren()) do
-                        if item.Name == itemName then
-                            moveItemToPos(item, campfireDropPos)
+            repeat
+                for itemName, enabled in pairs(autoFuelEnabledItems) do
+                    if enabled then
+                        for _, item in ipairs(itemsFolder:GetChildren()) do
+                            if item.Name == itemName then
+                                moveItemToPos(item, campfireDropPos)
+                            end
                         end
                     end
                 end
-            end
+                task.wait(0.5)
+                healthPercent = fillFrame and fillFrame.Size.X.Scale or 1
+            until healthPercent >= 1.0
         end
         task.wait(2)
     end
@@ -1196,6 +1257,35 @@ coroutine.wrap(function()
     end
 end)()
 
+-- === AUTO STRONGHOLD ===
+
+local strongholdRunning = false
+local strongholdDropdown = autofarmss:CreateDropDown("Auto Stronghold Notifier")
+local timer = workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
+
+-- Create the checkbox and keep a reference to it
+local strongholdCheckbox = strongholdDropdown:AddCheckbox(timer.Text, function(checked)
+    strongholdRunning = checked
+    if checked then
+        coroutine.wrap(function()
+            while strongholdRunning do
+                if strongholdCheckbox.SetText then
+                    strongholdCheckbox:SetText(timer.Text)
+                end
+                -- Your stronghold logic here
+                task.wait(1)
+            end
+        end)()
+    else
+        print("auto stronghold notifier disabled")
+    end
+end)
+
+strongholdDropdown:AddButton("Reset Timer", function()
+   local diamondchest workspace.Items["Stronghold Diamond Chest"].ChestLid["Meshes/diamondchest_Cube.002"]
+   game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = diamondchest.CFrame + Vector3.new(0, 5, 0)
+end)
+
 -- === TREE SYSTEM ===
 local originalTreeCFrames = {}
 local treesBrought = false
@@ -1259,12 +1349,9 @@ local function restoreTrees()
         if trunk then
             tree.PrimaryPart = trunk
             tree:SetPrimaryPartCFrame(cframe)
-            trunk.Anchored = false
-            task.delay(0.2, function()
-                if trunk then
-                    trunk.CanCollide = true
-                end
-            end)
+            trunk.Anchored = true
+            trunk.CanCollide = true
+            task.wait(0.1)
         end
     end
     originalTreeCFrames = {}
@@ -1283,6 +1370,8 @@ miscdropdown:AddCheckbox("Auto Bring All Small Trees", function(checked)
         restoreTrees()
     end
 end)
+
+
 
 
 
