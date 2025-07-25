@@ -299,47 +299,53 @@ local possibleItems = {
 }
 
 local bringitemtoyou = itemtp:CreateDropDown("Teleport Item (Bulk):")
+local sources = {
+    itemsFolder,
+    game:GetService("ReplicatedStorage"):WaitForChild("TempStorage")
+}
 
 local function teleportItem(itemName)
     local stackOffsetY = 2 -- Height between stacked items
     local count = 0
 
-    for _, item in ipairs(itemsFolder:GetChildren()) do
-        if item.Name == itemName then
-            local targetPart = nil
+    for _, source in ipairs(sources) do
+        for _, item in ipairs(source:GetChildren()) do
+            if item.Name == itemName then
+                local targetPart = nil
 
-            if itemName == "Berry" then
-                targetPart = item:FindFirstChild("Handle")
-                if not targetPart then
+                if itemName == "Berry" then
+                    targetPart = item:FindFirstChild("Handle")
+                    if not targetPart then
+                        for _, child in ipairs(item:GetDescendants()) do
+                            if child:IsA("MeshPart") or child:IsA("Part") or child:IsA("UnionOperation") then
+                                targetPart = child
+                                break
+                            end
+                        end
+                    end
+                else
                     for _, child in ipairs(item:GetDescendants()) do
-                        if child:IsA("MeshPart") or child:IsA("Part") or child:IsA("UnionOperation") then
+                        if child:IsA("MeshPart") or child:IsA("Part") then
                             targetPart = child
                             break
                         end
                     end
                 end
-            else
-                for _, child in ipairs(item:GetDescendants()) do
-                    if child:IsA("MeshPart") or child:IsA("Part") then
-                        targetPart = child
-                        break
-                    end
+
+                if targetPart then
+                    remoteEvents.RequestStartDraggingItem:FireServer(item)
+
+                    -- Stack vertically at player's position
+                    local offset = Vector3.new(0, count * stackOffsetY, 0)
+                    targetPart.CFrame = rootPart.CFrame + offset
+
+                    remoteEvents.StopDraggingItem:FireServer(item)
+                    print("Moved", itemName, ":", item:GetFullName())
+
+                    count = count + 1
+                else
+                    warn(itemName .. " found, but no MeshPart or Part inside:", item:GetFullName())
                 end
-            end
-
-            if targetPart then
-                remoteEvents.RequestStartDraggingItem:FireServer(item)
-
-                -- Stack vertically at player's position
-                local offset = Vector3.new(0, count * stackOffsetY, 0)
-                targetPart.CFrame = rootPart.CFrame + offset
-
-                remoteEvents.StopDraggingItem:FireServer(item)
-                print("Moved", itemName, ":", item:GetFullName())
-
-                count = count + 1
-            else
-                warn(itemName .. " found, but no MeshPart or Part inside:", item:GetFullName())
             end
         end
     end
@@ -350,7 +356,6 @@ for _, itemName in ipairs(possibleItems) do
         teleportItem(itemName)
     end)
 end
-
 
 -- tp item to you 
 
@@ -980,7 +985,7 @@ local campfireFuelItems = {"Log", "Coal", "Fuel Canister", "Oil Barrel", "Biofue
 local autocookItems = {"Morsel", "Steak"}
 local autoGrindItems = {"UFO Junk", "UFO Component", "Old Car Engine", "Broken Fan", "Old Microwave", "Bolt", "Log", "Cultist Gem", "Sheet Metal", "Old Radio"}
 local autoEatFoods = {"Cooked Steak", "Cooked Morsel", "Berry", "Carrot", "Apple"}
-local biofuelItems = {"Carrot", "Cooked Morsel", "Morsel", "Steak", "Cooked Steak"}
+local biofuelItems = {"Carrot", "Cooked Morsel", "Morsel", "Steak", "Cooked Steak", "Log"}
 
 -- === TOGGLES ===
 local autoFuelEnabledItems = {}
