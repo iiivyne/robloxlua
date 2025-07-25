@@ -22,5 +22,6 @@ local currentScript = placeScripts[game.PlaceId]
 if currentScript then
     currentScript()
 else
-    game:GetService("Players").LocalPlayer:Kick("Unsupported game. PlaceId: " .. tostring(game.PlaceId))
+    print('couldn't find specified placeId, ran universal')
+    loadstring(game:HttpGet("https://github.com/iiivyne/robloxlua/blob/main/universal.lua")()
 end
