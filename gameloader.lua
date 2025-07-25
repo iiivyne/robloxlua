@@ -22,6 +22,6 @@ local currentScript = placeScripts[game.PlaceId]
 if currentScript then
     currentScript()
 else
-    print('couldn't find specified placeId, ran universal')
-    loadstring(game:HttpGet("https://github.com/iiivyne/robloxlua/blob/main/universal.lua")()
+    print('couldnt find specified placeId, ran universal')
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/iiivyne/robloxlua/refs/heads/main/universal.lua"))()
 end
