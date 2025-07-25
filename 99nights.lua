@@ -1,4 +1,4 @@
-local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/NexityHereLol/robloxluascripts/refs/heads/main/simplistic_lib"))()
+local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/iiivyne/robloxlua/refs/heads/main/lib.lua"))()
 local int = lib:CreateInterface("99 Nights in the Forest","script made by lohjc","https://discord.gg/ZNTHTWx7KE","bottom left","royal")
 local main = int:CreateTab("Main","main functions/script utilities","default")
 local autofarmss = int:CreateTab("Auto","auto farm utilities (OP)","op")
@@ -832,46 +832,6 @@ local function findAnyBasePart(model)
     return nil
 end
 
--- Infinite Range Kill Aura main loop (targets all nested mobs in Workspace.Map.Characters)
-local function killAuraInfiniteRangeLoop()
-    while infRangeKillAuraToggle do
-        local character = player.Character or player.CharacterAdded:Wait()
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local tool, damageID = getAnyToolWithDamageID()
-            if tool and damageID then
-                equipTool(tool)
-
-                local mapFolder = Workspace:FindFirstChild("Map")
-                local charactersFolder = mapFolder and mapFolder:FindFirstChild("Characters")
-                if charactersFolder then
-                    local mobs = getAllModelsInFolder(charactersFolder)
-                    for _, mob in ipairs(mobs) do
-                        local part = findAnyBasePart(mob)
-                        if part then
-                            pcall(function()
-                                RemoteEvents.ToolDamageObject:InvokeServer(
-                                    mob,
-                                    tool,
-                                    damageID,
-                                    CFrame.new(part.Position)
-                                )
-                            end)
-                        end
-                    end
-                end
-
-                task.wait(0.1)
-            else
-                warn("No supported tool found in inventory")
-                task.wait(1)
-            end
-        else
-            task.wait(0.5)
-        end
-    end
-end
-
 -- UI checkbox toggles
 main:CreateCheckbox("Kill Aura", function(state)
     killAuraToggle = state
@@ -886,18 +846,6 @@ end)
 main:CreateSlider("Kill Aura Radius", 500, 20, function(value)
     radius = math.clamp(value, 20, 500)
 end)
-
-main:CreateCheckbox("Inf Range Kill Aura", function(state)
-    infRangeKillAuraToggle = state
-    if state then
-        task.spawn(killAuraInfiniteRangeLoop)
-    else
-        local tool, _ = getAnyToolWithDamageID()
-        unequipTool(tool)
-    end
-end)
-
-
 
 -- loop distance
 
@@ -1260,19 +1208,37 @@ end)()
 -- === AUTO STRONGHOLD ===
 
 local strongholdRunning = false
-local strongholdDropdown = autofarmss:CreateDropDown("Auto Stronghold Notifier")
-local timer = workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
+local strongholdDropdown = main:CreateDropDown("Auto Stronghold Clients")
 
--- Create the checkbox and keep a reference to it
-local strongholdCheckbox = strongholdDropdown:AddCheckbox(timer.Text, function(checked)
+-- Create the comment UI for the timer display
+local strongholdCheckbox = main:CreateComment("Stronghold Timer: N/A", function(checked)
     strongholdRunning = checked
     if checked then
         coroutine.wrap(function()
             while strongholdRunning do
-                if strongholdCheckbox.SetText then
-                    strongholdCheckbox:SetText(timer.Text)
+                local timerText = "Stronghold Timer: N/A"
+                local timerObj = nil
+
+                -- Try to find the timer object every second
+                if workspace:FindFirstChild("Map")
+                    and workspace.Map:FindFirstChild("Landmarks")
+                    and workspace.Map.Landmarks:FindFirstChild("Stronghold")
+                    and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
+                    and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
+                    and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
+                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
+                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body") then
+                    timerObj = workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
                 end
-                -- Your stronghold logic here
+
+                if timerObj and timerObj.Text then
+                    timerText = "Stronghold Timer: " .. timerObj.Text
+                end
+
+                if strongholdCheckbox.SetText then
+                    strongholdCheckbox:SetText(timerText)
+                end
+
                 task.wait(1)
             end
         end)()
@@ -1281,9 +1247,38 @@ local strongholdCheckbox = strongholdDropdown:AddCheckbox(timer.Text, function(c
     end
 end)
 
-strongholdDropdown:AddButton("Reset Timer", function()
-   local diamondchest workspace.Items["Stronghold Diamond Chest"].ChestLid["Meshes/diamondchest_Cube.002"]
-   game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = diamondchest.CFrame + Vector3.new(0, 5, 0)
+strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
+    local items = workspace:FindFirstChild("Items")
+    if not items then
+        warn("Items folder not found!")
+        return
+    end
+
+    local chest = items:FindFirstChild("Stronghold Diamond Chest")
+    if not chest then
+        warn("Stronghold Diamond Chest not found!")
+        return
+    end
+
+    local chestLid = chest:FindFirstChild("ChestLid")
+    if not chestLid then
+        warn("ChestLid not found!")
+        return
+    end
+
+    local diamondchest = chestLid:FindFirstChild("Meshes/diamondchest_Cube.002")
+    if not diamondchest then
+        warn("Diamond chest mesh not found!")
+        return
+    end
+
+    local character = game.Players.LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = diamondchest.CFrame + Vector3.new(0, 5, 0)
+    else
+        warn("HumanoidRootPart not found!")
+    end
 end)
 
 -- === TREE SYSTEM ===
