@@ -1043,10 +1043,17 @@ createDropdownWithCheckboxes("Auto Machine Grind", autoGrindItems, autoGrindEnab
 createDropdownWithCheckboxes("Auto Biofuel Processor", biofuelItems, autoBiofuelEnabledItems)
 
 -- Auto Eat
-local eatDropdown = autofarmss:CreateDropDown("Auto Eat")
+local eatDropdown = autofarmss:CreateDropDown("Auto Eat (3 sec interval)")
 eatDropdown:AddCheckbox("Enable Auto Eat", function(checked)
     autoEatEnabled = checked
 end)
+
+-- Auto Eat HP Based
+local eatHPDropdown = autofarmss:CreateDropDown("Auto Eat (HP Bar Based)")
+eatHPDropdown:AddCheckbox("Enable Auto Eat (HP Bar Based)", function(checked)
+    autoEatHPEnabled = checked
+end)
+
 
 -- === BACKGROUND COROUTINES ===
 coroutine.wrap(function() -- Always Feed Campfire
@@ -1135,6 +1142,31 @@ coroutine.wrap(function() -- Auto Eat
         task.wait(3)
     end
 end)()
+
+local hungerBar = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar.Bar
+
+coroutine.wrap(function() -- Auto Eat (HP Bar Based)
+    while true do
+        if autoEatHPEnabled then
+            local currentHunger = hungerBar.Size.X.Scale
+            if currentHunger <= 0.5 then
+                local available = {}
+                for _, item in ipairs(itemsFolder:GetChildren()) do
+                    if table.find(autoEatFoods, item.Name) then
+                        print('')
+                        table.insert(available, item)
+                    end
+                end
+                if #available > 0 then
+                    local food = available[math.random(1, #available)]
+                    pcall(function() remoteConsume:InvokeServer(food) end)
+                end
+            end
+        end
+        task.wait(3)
+    end
+end)()
+
 
 coroutine.wrap(function() -- Auto Biofuel
     local biofuelProcessorPos
@@ -1235,11 +1267,11 @@ end)
 
 -- === AUTO STRONGHOLD ===
 
-local strongholdRunning = false
-local strongholdDropdown = main:CreateDropDown("Stronghold Clients")
+-- === AUTO STRONGHOLD ===
 
--- Helper function to safely get the Stronghold timer TextLabel
-local function getStrongholdTimerTextLabel()
+local strongholdRunning = true -- Always running
+
+local function getStrongholdTimerLabel()
     return workspace:FindFirstChild("Map")
         and workspace.Map:FindFirstChild("Landmarks")
         and workspace.Map.Landmarks:FindFirstChild("Stronghold")
@@ -1250,32 +1282,75 @@ local function getStrongholdTimerTextLabel()
         and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
 end
 
--- Get initial timer text
-local bodyObj = getStrongholdTimerTextLabel()
-local initialText = "Stronghold Timer: " .. tostring(bodyObj and bodyObj.Text or "N/A")
+local initialLabel = getStrongholdTimerLabel()
+local initialText = "Stronghold Timer: " .. tostring(initialLabel and initialLabel.ContentText or "N/A")
+local strongholdDropdown = main:CreateDropDown("Stronghold Clients")
 
--- Create the comment UI for displaying timer text and checkbox logic
-local strongholdTimeChecker = main:CreateComment(initialText, function(checked)
-    strongholdRunning = checked
-    if checked then
-        coroutine.wrap(function()
-            local lastTimerText = nil
-            while strongholdRunning do
-                local currentObj = getStrongholdTimerTextLabel()
-                local timerText = "Stronghold Timer: " .. tostring(currentObj and currentObj.Text or "N/A")
+local strongholdTimeChecker = main:CreateComment(initialText)
 
-                if timerText ~= lastTimerText then
-                    strongholdTimeChecker:SetText(timerText)
-                    lastTimerText = timerText
+-- Coroutine to update timer text every second
+coroutine.wrap(function()
+    local lastTimerText = nil
+    while strongholdRunning do
+        local label = getStrongholdTimerLabel()
+        local timerText = "Stronghold Timer: " .. tostring(label and label.ContentText or "N/A")
+
+        if timerText ~= lastTimerText then
+            if strongholdTimeChecker.SetText then
+                strongholdTimeChecker:SetText(timerText)
+            else
+                -- fallback in case SetText not available
+                local commentContent = strongholdTimeChecker:FindFirstChild("commentcontent")
+                if commentContent then
+                    commentContent.Text = timerText
                 end
-
-                task.wait(1)
             end
-        end)()
+            lastTimerText = timerText
+        end
+
+        -- Stop if timer hits zero
+        local currentText = label and label.ContentText or ""
+        if currentText == "0m 0s" or currentText == "00s" then
+            print("[StrongholdTimer] Timer finished, stopping update.")
+            break
+        end
+
+        task.wait()
+    end
+end)()
+
+
+strongholdDropdown:AddButton("Teleport to Stronghold", function()
+    local targetPart = workspace:FindFirstChild("Map")
+        and workspace.Map:FindFirstChild("Landmarks")
+        and workspace.Map.Landmarks:FindFirstChild("Stronghold")
+        and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
+        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("EntryDoors")
+        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors:FindFirstChild("DoorRight")
+        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors.DoorRight:FindFirstChild("Model")
+
+    if targetPart then
+        local children = targetPart:GetChildren()
+        local destination = children[5]
+
+        if destination and destination:IsA("BasePart") then
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                -- Offset slightly above the target to avoid clipping
+                hrp.CFrame = destination.CFrame + Vector3.new(0, 5, 0)
+                print("Teleported to Stronghold DoorRight Model child #5.")
+            else
+                warn("HumanoidRootPart not found!")
+            end
+        else
+            warn("Child #5 is missing or not a BasePart!")
+        end
     else
-        print("Auto stronghold timer disabled")
+        warn("DoorRight.Model path not found!")
     end
 end)
+
+
 
 -- Teleport to Stronghold Diamond Chest button
 strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
@@ -1310,35 +1385,6 @@ strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
         warn("HumanoidRootPart not found!")
     end
 end)
-
--- Teleport behind Stronghold DoorRight's quart_cylinder part
-strongholdDropdown:AddButton("Teleport to Stronghold DoorRight", function()
-    local doorPart = workspace:FindFirstChild("Map")
-        and workspace.Map:FindFirstChild("Landmarks")
-        and workspace.Map.Landmarks:FindFirstChild("Stronghold")
-        and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
-        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("EntryDoors")
-        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors:FindFirstChild("DoorRight")
-        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors.DoorRight:FindFirstChild("Meshes/quart_cylinder (1)")
-
-    if doorPart and doorPart:IsA("BasePart") then
-        local baseCFrame = doorPart.CFrame
-        -- Teleport 5 studs behind the part + 5 studs up
-        local offsetPos = baseCFrame.Position - (baseCFrame.LookVector * 5) + Vector3.new(0, 5, 0)
-
-        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = CFrame.new(offsetPos)
-            print("Teleported behind DoorRight quart_cylinder part.")
-        else
-            warn("HumanoidRootPart not found!")
-        end
-    else
-        warn("DoorRight quart_cylinder part not found!")
-    end
-end)
-
-
 
 -- auto 
 
