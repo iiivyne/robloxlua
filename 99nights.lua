@@ -1232,52 +1232,44 @@ miscdropdown:AddCheckbox("Auto Bring All Small Trees", function(checked)
     end
 end)
 
+
 -- === AUTO STRONGHOLD ===
 
 local strongholdRunning = false
 local strongholdDropdown = main:CreateDropDown("Stronghold Clients")
 
--- Create the comment UI for the timer display
--- Get initial Body.Text value if available
-local bodyObj = workspace:FindFirstChild("Map")
-    and workspace.Map:FindFirstChild("Landmarks")
-    and workspace.Map.Landmarks:FindFirstChild("Stronghold")
-    and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
-    and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
-    and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
-    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
-    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
+-- Helper function to safely get the Stronghold timer TextLabel
+local function getStrongholdTimerTextLabel()
+    return workspace:FindFirstChild("Map")
+        and workspace.Map:FindFirstChild("Landmarks")
+        and workspace.Map.Landmarks:FindFirstChild("Stronghold")
+        and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
+        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
+end
 
--- Initial comment text (based on Body.Text or "N/A")
+-- Get initial timer text
+local bodyObj = getStrongholdTimerTextLabel()
 local initialText = "Stronghold Timer: " .. tostring(bodyObj and bodyObj.Text or "N/A")
 
--- Create the comment and set up checkbox toggle logic
+-- Create the comment UI for displaying timer text and checkbox logic
 local strongholdTimeChecker = main:CreateComment(initialText, function(checked)
     strongholdRunning = checked
     if checked then
         coroutine.wrap(function()
             local lastTimerText = nil
             while strongholdRunning do
-                -- Find the Body object each tick (in case the map reloads)
-                local currentObj = workspace:FindFirstChild("Map")
-                    and workspace.Map:FindFirstChild("Landmarks")
-                    and workspace.Map.Landmarks:FindFirstChild("Stronghold")
-                    and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
-                    and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
-
-                -- Construct new display text
+                local currentObj = getStrongholdTimerTextLabel()
                 local timerText = "Stronghold Timer: " .. tostring(currentObj and currentObj.Text or "N/A")
 
-                -- Only update UI if the text has changed
-                if strongholdTimeChecker.SetText and timerText ~= lastTimerText then
+                if timerText ~= lastTimerText then
                     strongholdTimeChecker:SetText(timerText)
                     lastTimerText = timerText
                 end
 
-                task.wait(1) -- Update every second
+                task.wait(1)
             end
         end)()
     else
@@ -1285,6 +1277,7 @@ local strongholdTimeChecker = main:CreateComment(initialText, function(checked)
     end
 end)
 
+-- Teleport to Stronghold Diamond Chest button
 strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
     local items = workspace:FindFirstChild("Items")
     if not items then
@@ -1310,8 +1303,7 @@ strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
         return
     end
 
-    local character = game.Players.LocalPlayer.Character
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
         hrp.CFrame = diamondchest.CFrame + Vector3.new(0, 5, 0)
     else
@@ -1319,27 +1311,33 @@ strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
     end
 end)
 
-strongholdDropdown:AddButton("Teleport to Stronghold", function()
-    local timerObj = workspace:FindFirstChild("Map")
+-- Teleport behind Stronghold DoorRight's quart_cylinder part
+strongholdDropdown:AddButton("Teleport to Stronghold DoorRight", function()
+    local doorPart = workspace:FindFirstChild("Map")
         and workspace.Map:FindFirstChild("Landmarks")
         and workspace.Map.Landmarks:FindFirstChild("Stronghold")
         and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
-        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
-        and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
-        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
-        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
+        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("EntryDoors")
+        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors:FindFirstChild("DoorRight")
+        and workspace.Map.Landmarks.Stronghold.Functional.EntryDoors.DoorRight:FindFirstChild("Meshes/quart_cylinder (1)")
 
-    if timerObj and timerObj:IsA("TextLabel") and timerObj:IsDescendantOf(workspace) then
-        -- Get CFrame and apply an offset behind it (e.g. 5 studs back, 5 studs up)
-        local baseCFrame = timerObj.CFrame
-        local behindOffset = baseCFrame.Position - (baseCFrame.LookVector * 5) + Vector3.new(0, 5, 0)
+    if doorPart and doorPart:IsA("BasePart") then
+        local baseCFrame = doorPart.CFrame
+        -- Teleport 5 studs behind the part + 5 studs up
+        local offsetPos = baseCFrame.Position - (baseCFrame.LookVector * 5) + Vector3.new(0, 5, 0)
 
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(behindOffset)
-        print("Teleported behind the Stronghold sign.")
+        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(offsetPos)
+            print("Teleported behind DoorRight quart_cylinder part.")
+        else
+            warn("HumanoidRootPart not found!")
+        end
     else
-        warn("Could not find Stronghold Body object to teleport to.")
+        warn("DoorRight quart_cylinder part not found!")
     end
 end)
+
 
 
 -- auto 
