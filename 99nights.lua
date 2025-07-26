@@ -298,7 +298,8 @@ local possibleItems = {
     "Wolf Pelt",
     "Gem of the Forest Fragment",
     "Tyre",
-    "Washing Machine"
+    "Washing Machine",
+    "Broken Microwave"
 }
 
 local bringitemtoyou = itemtp:CreateDropDown("Teleport Item (Bulk):")
@@ -986,7 +987,7 @@ local machineDropPos = Vector3.new(21, 16, -5)
 -- === ITEM LISTS ===
 local campfireFuelItems = {"Log", "Coal", "Fuel Canister", "Oil Barrel", "Biofuel"}
 local autocookItems = {"Morsel", "Steak"}
-local autoGrindItems = {"UFO Junk", "UFO Component", "Old Car Engine", "Broken Fan", "Old Microwave", "Bolt", "Log", "Cultist Gem", "Sheet Metal", "Old Radio","Tyre","Washing Machine", "Cultist Experiment", "Cultist Component", "Gem of the Forest Fragment"}
+local autoGrindItems = {"UFO Junk", "UFO Component", "Old Car Engine", "Broken Fan", "Old Microwave", "Bolt", "Log", "Cultist Gem", "Sheet Metal", "Old Radio","Tyre","Washing Machine", "Cultist Experiment", "Cultist Component", "Gem of the Forest Fragment", "Broken Microwave"}
 local autoEatFoods = {"Cooked Steak", "Cooked Morsel", "Berry", "Carrot", "Apple"}
 local biofuelItems = {"Carrot", "Cooked Morsel", "Morsel", "Steak", "Cooked Steak", "Log"}
 
@@ -1237,39 +1238,50 @@ local strongholdRunning = false
 local strongholdDropdown = main:CreateDropDown("Stronghold Clients")
 
 -- Create the comment UI for the timer display
-local strongholdCheckbox = main:CreateComment("Stronghold Timer: N/A", function(checked)
+-- Get initial Body.Text value if available
+local bodyObj = workspace:FindFirstChild("Map")
+    and workspace.Map:FindFirstChild("Landmarks")
+    and workspace.Map.Landmarks:FindFirstChild("Stronghold")
+    and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
+    and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
+    and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
+    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
+    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
+
+-- Initial comment text (based on Body.Text or "N/A")
+local initialText = "Stronghold Timer: " .. tostring(bodyObj and bodyObj.Text or "N/A")
+
+-- Create the comment and set up checkbox toggle logic
+local strongholdTimeChecker = main:CreateComment(initialText, function(checked)
     strongholdRunning = checked
     if checked then
         coroutine.wrap(function()
+            local lastTimerText = nil
             while strongholdRunning do
-                local timerText = "Stronghold Timer: N/A"
-                local timerObj = nil
-
-                -- Try to find the timer object every second
-                if workspace:FindFirstChild("Map")
+                -- Find the Body object each tick (in case the map reloads)
+                local currentObj = workspace:FindFirstChild("Map")
                     and workspace.Map:FindFirstChild("Landmarks")
                     and workspace.Map.Landmarks:FindFirstChild("Stronghold")
                     and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
                     and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
                     and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
                     and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body") then
-                    timerObj = workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
+                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
+
+                -- Construct new display text
+                local timerText = "Stronghold Timer: " .. tostring(currentObj and currentObj.Text or "N/A")
+
+                -- Only update UI if the text has changed
+                if strongholdTimeChecker.SetText and timerText ~= lastTimerText then
+                    strongholdTimeChecker:SetText(timerText)
+                    lastTimerText = timerText
                 end
 
-                if timerObj and timerObj.Text then
-                    timerText = "Stronghold Timer: " .. timerObj.Text
-                end
-
-                if strongholdCheckbox.SetText then
-                    strongholdCheckbox:SetText(timerText)
-                end
-
-                task.wait(1)
+                task.wait(1) -- Update every second
             end
         end)()
     else
-        print("auto stronghold notifier disabled")
+        print("Auto stronghold timer disabled")
     end
 end)
 
@@ -1308,24 +1320,27 @@ strongholdDropdown:AddButton("Teleport to Diamond Chest", function()
 end)
 
 strongholdDropdown:AddButton("Teleport to Stronghold", function()
-     if workspace:FindFirstChild("Map")
-                    and workspace.Map:FindFirstChild("Landmarks")
-                    and workspace.Map.Landmarks:FindFirstChild("Stronghold")
-                    and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
-                    and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
-                    and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body") then
-                    timerObj = workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame.Body
-                end
+    local timerObj = workspace:FindFirstChild("Map")
+        and workspace.Map:FindFirstChild("Landmarks")
+        and workspace.Map.Landmarks:FindFirstChild("Stronghold")
+        and workspace.Map.Landmarks.Stronghold:FindFirstChild("Functional")
+        and workspace.Map.Landmarks.Stronghold.Functional:FindFirstChild("Sign")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign:FindFirstChild("SurfaceGui")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui:FindFirstChild("Frame")
+        and workspace.Map.Landmarks.Stronghold.Functional.Sign.SurfaceGui.Frame:FindFirstChild("Body")
 
-                if timerObj and timerObj.Text then
-                    timerText = "Stronghold Timer: " .. timerObj.Text
-                end
+    if timerObj and timerObj:IsA("TextLabel") and timerObj:IsDescendantOf(workspace) then
+        -- Get CFrame and apply an offset behind it (e.g. 5 studs back, 5 studs up)
+        local baseCFrame = timerObj.CFrame
+        local behindOffset = baseCFrame.Position - (baseCFrame.LookVector * 5) + Vector3.new(0, 5, 0)
 
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(timerObj.Position + Vector3.new(0, 5, 0))
-    print('im at the stronghold sigmas')
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(behindOffset)
+        print("Teleported behind the Stronghold sign.")
+    else
+        warn("Could not find Stronghold Body object to teleport to.")
+    end
 end)
+
 
 -- auto 
 
