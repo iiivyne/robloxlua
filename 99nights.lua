@@ -1,5 +1,5 @@
 local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/iiivyne/robloxlua/refs/heads/main/lib.lua"))()
-local int = lib:CreateInterface("99 Nights in the Forest","script made by lohjc","https://discord.gg/ZNTHTWx7KE","bottom left","fire")
+local int = lib:CreateInterface("99 Nights in the Forest","script made by lohjc","https://discord.gg/ZNTHTWx7KE","bottom left","royal")
 local main = int:CreateTab("Main","main functions/script utilities","default",true)
 local autofarmss = int:CreateTab("Auto","auto farm utilities (OP)","op")
 local itemtp = int:CreateTab("Item TP/ESP","bring items to you","item")
@@ -295,7 +295,10 @@ local possibleItems = {
     "Sapling",
     "Sheet Metal",
     "Steak",
-    "Wolf Pelt"
+    "Wolf Pelt",
+    "Gem of the Forest Fragment",
+    "Tyre",
+    "Washing Machine"
 }
 
 local bringitemtoyou = itemtp:CreateDropDown("Teleport Item (Bulk):")
@@ -879,7 +882,7 @@ local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local bracket = {
     weapons = {
         -- Removed Good Axe and Strong Axe
-        "Laser Sword", "Raygun", "Kunai", "Katana" -- moved to misc tools, but you wanted it here too?
+        "Laser Sword", "Raygun", "Kunai", "Katana", "Spear" -- moved to misc tools, but you wanted it here too?
     },
     minifoods = {
         "Apple", "Berry", "Carrot"
@@ -983,7 +986,7 @@ local machineDropPos = Vector3.new(21, 16, -5)
 -- === ITEM LISTS ===
 local campfireFuelItems = {"Log", "Coal", "Fuel Canister", "Oil Barrel", "Biofuel"}
 local autocookItems = {"Morsel", "Steak"}
-local autoGrindItems = {"UFO Junk", "UFO Component", "Old Car Engine", "Broken Fan", "Old Microwave", "Bolt", "Log", "Cultist Gem", "Sheet Metal", "Old Radio"}
+local autoGrindItems = {"UFO Junk", "UFO Component", "Old Car Engine", "Broken Fan", "Old Microwave", "Bolt", "Log", "Cultist Gem", "Sheet Metal", "Old Radio","Tyre","Washing Machine", "Cultist Experiment", "Cultist Component", "Gem of the Forest Fragment"}
 local autoEatFoods = {"Cooked Steak", "Cooked Morsel", "Berry", "Carrot", "Apple"}
 local biofuelItems = {"Carrot", "Cooked Morsel", "Morsel", "Steak", "Cooked Steak", "Log"}
 
