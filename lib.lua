@@ -797,6 +797,17 @@ function lib:CreateInterface(name, subinfo, linkpromo, alignment, theme)
 			comment_2.Position = UDim2.new(0.919581175, 0, 0.239029348, 0)
 			comment_2.Size = UDim2.new(0, 22, 0, 21)
 			comment_2.Image = "rbxassetid://106089792142921"
+
+			    local commentObject = {}
+
+			    commentObject.Frame = comment
+			    commentObject.TextLabel = commentcontent
+			
+			    function commentObject:SetText(newText)
+			        self.TextLabel.Text = newText
+			    end
+			
+			    return commentObject
 			
 		end
 
