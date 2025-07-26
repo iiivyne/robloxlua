@@ -1267,8 +1267,6 @@ end)
 
 -- === AUTO STRONGHOLD ===
 
--- === AUTO STRONGHOLD ===
-
 local strongholdRunning = true -- Always running
 
 local function getStrongholdTimerLabel()
@@ -1299,7 +1297,6 @@ coroutine.wrap(function()
             if strongholdTimeChecker.SetText then
                 strongholdTimeChecker:SetText(timerText)
             else
-                -- fallback in case SetText not available
                 local commentContent = strongholdTimeChecker:FindFirstChild("commentcontent")
                 if commentContent then
                     commentContent.Text = timerText
@@ -1308,17 +1305,9 @@ coroutine.wrap(function()
             lastTimerText = timerText
         end
 
-        -- Stop if timer hits zero
-        local currentText = label and label.ContentText or ""
-        if currentText == "0m 0s" or currentText == "00s" then
-            print("[StrongholdTimer] Timer finished, stopping update.")
-            break
-        end
-
-        task.wait()
+        task.wait(1) -- check every second
     end
 end)()
-
 
 strongholdDropdown:AddButton("Teleport to Stronghold", function()
     local targetPart = workspace:FindFirstChild("Map")
