@@ -75,8 +75,7 @@ end
 
 local storyCoords = {
     { "[campsite] camp site", "0, 8, -0"},
-    { "[safezone] safe zone", "0, 110, -0" },
-    { "[stronghold] cultist stronghold", "546, 4, 263"}
+    { "[safezone] safe zone", "0, 110, -0" }
 }
 
 local storyDropdown = gametp:CreateDropDown("Teleports")
@@ -1143,29 +1142,45 @@ coroutine.wrap(function() -- Auto Eat
     end
 end)()
 
-local hungerBar = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar.Bar
+local player = game:GetService("Players").LocalPlayer
+local hungerBar = player:WaitForChild("PlayerGui"):WaitForChild("Interface"):WaitForChild("StatBars"):WaitForChild("HungerBar"):WaitForChild("Bar")
 
 coroutine.wrap(function() -- Auto Eat (HP Bar Based)
     while true do
         if autoEatHPEnabled then
-            local currentHunger = hungerBar.Size.X.Scale
-            if currentHunger <= 0.5 then
-                local available = {}
-                for _, item in ipairs(itemsFolder:GetChildren()) do
-                    if table.find(autoEatFoods, item.Name) then
-                        print('')
-                        table.insert(available, item)
+            if hungerBar.Size.X.Scale <= 0.5 then
+                repeat
+                    local currentHunger = hungerBar.Size.X.Scale
+
+                    local available = {}
+                    for _, item in ipairs(itemsFolder:GetChildren()) do
+                        if item.Name and table.find(autoEatFoods, item.Name) then
+                            table.insert(available, item)
+                            print("Found available food item: ", item.Name)
+                        end
                     end
-                end
-                if #available > 0 then
-                    local food = available[math.random(1, #available)]
-                    pcall(function() remoteConsume:InvokeServer(food) end)
-                end
+
+                    if #available > 0 then
+                        local food = available[math.random(1, #available)]
+                        if food then
+                            pcall(function()
+                                remoteConsume:InvokeServer(food)
+                            end)
+                        end
+                    else
+                        warn("No available food found in inventory.")
+                        break -- Stop trying if no food
+                    end
+
+                    task.wait(1) -- Wait for GUI to reflect update
+
+                until hungerBar.Size.X.Scale >= 0.99 or not autoEatHPEnabled
             end
         end
         task.wait(3)
     end
 end)()
+
 
 
 coroutine.wrap(function() -- Auto Biofuel
@@ -1305,7 +1320,7 @@ coroutine.wrap(function()
             lastTimerText = timerText
         end
 
-        task.wait(1) -- check every second
+        task.wait(0.5) -- check every second
     end
 end)()
 
